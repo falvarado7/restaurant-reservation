@@ -55,7 +55,7 @@ function useTheme(): [Theme, () => void] {
     return [theme, toggle];
 }
 
-function NavLinkItem({ to, children, onClick }: { to: string; children: React.ReactNode; onClick?: () => void }) {
+function NavLinkItem({ to, children }: { to: string; children: React.ReactNode; onClick?: () => void }) {
     const { pathname } = useLocation();
     const active = pathname.startsWith(to);
     return (
