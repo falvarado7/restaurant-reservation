@@ -1,15 +1,25 @@
 import ky from "ky";
 
+const base =
+  (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, "") ||
+  "http://localhost:5001";
+
 export const api = ky.create({
-    prefixUrl: import.meta.env.VITE_API_BASE || "/api",
-    // no afterResponse hook; we'll parse explicitly per request
+  prefixUrl: base,
+  retry: 0,
+  cache: "no-store",
+  headers: { "Cache-Control": "no-cache" },
 });
 
-// Generic request that unwraps `{ data }`, and handles 204
+
 export async function requestJson<T>(p: Promise<Response>): Promise<T> {
-    const res = await p;
-    if (res.status === 204) return undefined as T;
-    const json = await res.json().catch(() => ({}));
-    if (json?.error) throw new Error(json.error);
-    return (json?.data ?? json) as T;
+  const res = await p;
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText} — ${text}`);
+  }
+  if (res.status === 204) return undefined as T;
+  const json = await res.json().catch(() => ({}));
+  if (json?.error) throw new Error(json.error);
+  return (json?.data ?? json) as T;
 }
