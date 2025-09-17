@@ -9,7 +9,8 @@ const tablesRouter = require("./tables/tables.router");
 
 const app = express();
 
-const allowList = (process.env.CORS_ORIGIN || "").split(",").filter(Boolean);
+const allowList = (process.env.CORS_ORIGIN || "")
+    .split(",").filter(Boolean);
 // if no CORS_ORIGIN set, allow localhost dev ports by default
 const defaultOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"];
 
