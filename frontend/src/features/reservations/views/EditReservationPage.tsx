@@ -127,9 +127,9 @@ export default function EditReservationPage() {
                     <button type="button"
                         disabled={isUpdating || isDeleting}
                         className="
-                            inline-flex items-center gap-2 rounded-xl sm:px-4 sm:py-2 px-2.5 py-1.5 text-sm font-medium transition
-                            bg-red-300 text-red-700 border-red-400 hover:bg-red-400
-                            dark:bg-red-800 dark:text-red-200 dark:border-red-600  dark:hover:bg-red-600"
+                            inline-flex items-center gap-2 rounded-xl sm:px-4 sm:py-2 px-2.5 py-1.5 text-sm font-medium transition border
+                            bg-gray-200 dark:bg-zinc-900 text-red-700 border-red-600 hover:bg-red-200
+                            dark:text-red-400  dark:hover:bg-red-950"
                         onClick={delReservation}
                     >
                         {isDeleting ? "Deleting..." : "Delete"}
