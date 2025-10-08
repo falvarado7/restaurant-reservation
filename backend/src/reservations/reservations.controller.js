@@ -263,6 +263,13 @@ async function updateReservationStatus(req, res) {
   res.json({ data });
 }
 
+async function destroyReservation(req, res, next) {
+    const { reservation } = res.locals;
+    const count = await service.destroy(reservation.reservation_id);
+    if (!count) return next({ status: 404, message: "Reservation not found." });
+    res.sendStatus(204);
+}
+
 /**
  * List handler for reservations resources
  */
@@ -317,5 +324,9 @@ module.exports = {
     hasValidStatus,
     statusIsNotFinished,
     asyncErrorBoundary(updateReservationStatus),
+  ],
+    destroyReservation: [
+    asyncErrorBoundary(reservationExists),
+    asyncErrorBoundary(destroyReservation),
   ],
 };

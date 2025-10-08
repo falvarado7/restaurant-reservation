@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useReservation, useUpdateReservation } from "../hooks";
+import { useReservation, useUpdateReservation, useDeleteReservation } from "../hooks";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type Resolver } from "react-hook-form";
@@ -19,10 +19,19 @@ const Schema = z.object({
 type FormValues = z.infer<typeof Schema>;
 
 export default function EditReservationPage() {
-    const { reservation_id } = useParams();
+    const { reservation_id } = useParams<{ reservation_id: string }>();
     const nav = useNavigate();
     const { data, isLoading } = useReservation(reservation_id!);
-    const { mutateAsync, isPending } = useUpdateReservation();
+
+    const {
+        mutateAsync: updateReservationsAsync,
+        isPending: isUpdating
+    } = useUpdateReservation();
+
+    const {
+        mutateAsync: deleteReservationAsync,
+        isPending: isDeleting
+    } = useDeleteReservation();
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(Schema) as Resolver<FormValues>,
@@ -46,13 +55,25 @@ export default function EditReservationPage() {
 
     const onSubmit = async (values: FormValues) => {
         try {
-            await mutateAsync({ ...values, reservation_id: Number(reservation_id) } as any);
+            await updateReservationsAsync({ ...values, reservation_id: Number(reservation_id) } as any);
             toast.success("Reservation updated");
             nav(`/dashboard?date=${values.reservation_date}`);
         } catch (e) {
             toast.error(String(e));
         }
     };
+
+    const delReservation = async () => {
+        try {
+            const ok = confirm("Do you want to delete this reservation? This cannot be undone.");
+            if (!ok) return;
+            await deleteReservationAsync(Number(reservation_id));
+            toast.success("Reservation deleted");
+            nav(`/dashboard`);
+        } catch (e) {
+            toast.error(String(e));
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -90,11 +111,11 @@ export default function EditReservationPage() {
                     {errors.reservation_time && <p className="mt-1 text-xs text-red-600 pl-3">{errors.reservation_time.message}</p>}
                 </div>
                 <div className="sm:col-span-2 flex gap-2 pt-2">
-                    <Button type="submit" disabled={isPending}
+                    <Button type="submit" disabled={isUpdating || isDeleting}
                             className="bg-gray-200 text-zinc-800 border-zinc-50
                             dark:bg-zinc-900 dark:text-zinc-100 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-700"
                     >
-                        Save
+                        {isUpdating ? "Saving..." : "Save"}
                     </Button>
                     <Button type="button"
                         className="bg-gray-200 text-zinc-800 border-zinc-50
@@ -103,6 +124,16 @@ export default function EditReservationPage() {
                     >
                         Cancel
                     </Button>
+                    <button type="button"
+                        disabled={isUpdating || isDeleting}
+                        className="
+                            inline-flex items-center gap-2 rounded-xl sm:px-4 sm:py-2 px-2.5 py-1.5 text-sm font-medium transition
+                            bg-red-300 text-red-700 border-red-400 hover:bg-red-400
+                            dark:bg-red-800 dark:text-red-200 dark:border-red-600  dark:hover:bg-red-600"
+                        onClick={delReservation}
+                    >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                    </button>
                 </div>
                 </form>
             </Card>

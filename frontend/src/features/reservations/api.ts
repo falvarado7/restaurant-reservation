@@ -25,6 +25,10 @@ export async function updateReservation(payload: Reservation) {
     return requestJson<Reservation>(api.put(`reservations/${parsed.reservation_id}`, { json: { data: { ...parsed, people: Number(parsed.people) } } }));
 }
 
+export async function deleteReservation(id: number | string) {
+    return requestJson<void>(api.delete(`reservations/${id}`));
+}
+
 export async function setReservationStatus(id: number | string, status: "booked" | "seated" | "finished" | "cancelled") {
     return requestJson<Reservation>(api.put(`reservations/${id}/status`, { json: { data: { status } } }));
 }

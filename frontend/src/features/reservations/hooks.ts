@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createReservation, listReservations, readReservation, setReservationStatus, updateReservation } from "./api";
+import { createReservation,
+    listReservations,
+    readReservation,
+    setReservationStatus,
+    updateReservation,
+    deleteReservation
+} from "./api";
 import type { Reservation } from "./types";
 
 export function useReservations(date: string) {
@@ -22,6 +28,14 @@ export function useUpdateReservation() {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (r: Reservation) => updateReservation(r),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ["reservations"] }),
+    });
+}
+
+export function useDeleteReservation() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number | string) => deleteReservation(id),
         onSuccess: () => qc.invalidateQueries({ queryKey: ["reservations"] }),
     });
 }

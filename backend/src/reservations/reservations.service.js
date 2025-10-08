@@ -28,6 +28,12 @@ function update(updatedReservation) {
     .then((updatedRecords) => updatedRecords[0]);
 }
 
+function destroy(reservation_id) {
+  return knex("reservations")
+    .where({ reservation_id })
+    .del();
+}
+
 function listReservationsOnQueriedDate(reservation_date) {
   return knex("reservations")
     .select("*")
@@ -41,5 +47,6 @@ module.exports = {
   read,
   searchReservationByPhone,
   update,
+  destroy,
   listReservationsOnQueriedDate,
 };
