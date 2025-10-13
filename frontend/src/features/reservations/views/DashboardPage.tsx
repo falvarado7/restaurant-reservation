@@ -117,8 +117,9 @@ export default function DashboardPage() {
                                             </span>
                                             <Link
                                                 to={`/reservations/${r.reservation_id}/edit`}
-                                                className="rounded-xl border px-3 py-1 text-sm bg-gray-200 text-zinc-800 border-zinc-50
-                                                    dark:bg-zinc-900 dark:text-zinc-100 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-700"
+                                                className="rounded-xl border px-3 py-1 text-sm bg-gray-200 dark:bg-zinc-900
+                                                    hover:bg-yellow-200 dark:hover:bg-yellow-950
+                                                    border-yellow-600 text-yellow-700 dark:text-yellow-400"
                                             >
                                                 Edit
                                             </Link>

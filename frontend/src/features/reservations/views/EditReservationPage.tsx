@@ -111,12 +111,14 @@ export default function EditReservationPage() {
                     {errors.reservation_time && <p className="mt-1 text-xs text-red-600 pl-3">{errors.reservation_time.message}</p>}
                 </div>
                 <div className="sm:col-span-2 flex gap-2 pt-2">
-                    <Button type="submit" disabled={isUpdating || isDeleting}
-                            className="bg-gray-200 text-zinc-800 border-zinc-50
-                            dark:bg-zinc-900 dark:text-zinc-100 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-700"
+                    <button type="submit" disabled={isUpdating || isDeleting}
+                        className="
+                            inline-flex items-center gap-2 rounded-xl sm:px-4 sm:py-2 px-2.5 py-1.5 text-sm font-medium transition border
+                            bg-gray-200 dark:bg-zinc-900 text-green-700 border-green-600 hover:bg-green-200
+                            dark:text-green-400  dark:hover:bg-green-950"
                     >
                         {isUpdating ? "Saving..." : "Save"}
-                    </Button>
+                    </button>
                     <Button type="button"
                         className="bg-gray-200 text-zinc-800 border-zinc-50
                         dark:bg-zinc-900 dark:text-zinc-100 dark:border-white/10 hover:bg-white dark:hover:bg-zinc-700"
@@ -124,7 +126,7 @@ export default function EditReservationPage() {
                     >
                         Cancel
                     </Button>
-                    <button type="button"
+                    <button
                         disabled={isUpdating || isDeleting}
                         className="
                             inline-flex items-center gap-2 rounded-xl sm:px-4 sm:py-2 px-2.5 py-1.5 text-sm font-medium transition border
