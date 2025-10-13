@@ -80,16 +80,18 @@ function DashboardTables() {
                                             </Link>
                                         )}
 
-                                        {<Link
-                                            to={`/tables/${t.table_id}/edit`}
-                                            className="mt-3 ml-1 inline-flex rounded-xl border px-3 py-1 text-sm
-                                                bg-gray-200 dark:bg-zinc-900
-                                                hover:bg-yellow-200 dark:hover:bg-yellow-950
-                                                border-yellow-600 text-yellow-700 dark:text-yellow-400
-                                                "
-                                        >
-                                            Edit
-                                        </Link>}
+                                        {!occupied && (
+                                            <Link
+                                                to={`/tables/${t.table_id}/edit`}
+                                                className="mt-3 ml-1 inline-flex rounded-xl border px-3 py-1 text-sm
+                                                    bg-gray-200 dark:bg-zinc-900
+                                                    hover:bg-yellow-200 dark:hover:bg-yellow-950
+                                                    border-yellow-600 text-yellow-700 dark:text-yellow-400
+                                                    "
+                                            >
+                                                Edit
+                                            </Link>
+                                        )}
                                     </div>
                                 </li>
                             );
