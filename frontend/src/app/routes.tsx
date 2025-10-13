@@ -6,6 +6,7 @@ import EditReservationPage from "../features/reservations/views/EditReservationP
 import SeatReservationPage from "../features/reservations/views/SeatReservationPage";
 import SearchPage from "../features/reservations/views/SearchPage";
 import NewTablePage from "../features/tables/views/NewTablePage";
+import EditTablePage from "../features/tables/views/EditTablePage";
 
 export default function AppRoutes() {
     return (
@@ -18,6 +19,7 @@ export default function AppRoutes() {
                 <Route path="/reservations/:reservation_id/seat" element={<SeatReservationPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/tables/new" element={<NewTablePage />} />
+                <Route path="/tables/:table_id/edit" element={<EditTablePage />} />
             </Route>
         </Routes>
     );

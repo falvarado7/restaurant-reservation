@@ -1,16 +1,25 @@
 const asyncErrorBoundary = require("../errors/asyncErrorBoundary");
-const knex = require("../db/connection");   // ✅ add this line
+const knex = require("../db/connection");
+const tService = require("./tables.service");
 const aService = require("./assignments.service");
+const { read } = require("../reservations/reservations.controller");
 
-/**
- * Validation function for the create handler:
- */
-
+/* ------------ shared validators --------------- */
 function hasData(req, _res, next) {
-  if (req.body && req.body.data) return next();
-  next({ status: 400, message: "Request body must have data property." });
+    if (req.body && req.body.data) return next();
+    next({ status: 400, message: "Request body must have data property." });
 }
 
+async function tableExists(req, res, next) {
+    const table = await tService.read(req.params.table_id);
+    if (table) {
+      res.locals.table = table;
+      return next();
+    }
+    next({ status: 404, message: `Table with id: ${req.params.table_id} does not exist.` });
+}
+
+/* ------------ validators for creating a table --------------- */
 function initErrors(req, res, next) {
   res.locals.errors = { status: 400, message: [] };
   next();
@@ -53,13 +62,7 @@ function finalizeErrors(_req, res, next) {
   next();
 }
 
-async function tableExists(req, res, next) {
-  const table = await knex("tables").where({ table_id: req.params.table_id }).first();
-  if (!table) return next({ status: 404, message: `Table with id: ${req.params.table_id} does not exist.` });
-  res.locals.table = table;
-  next();
-}
-
+/* --------------- validators for seat/finish flow ----------------- */
 function hasReservationId(req, res, next) {
   const { reservation_id } = req.body.data || {};
   if (!reservation_id) return next({ status: 400, message: "The reservation_id is missing from the request body." });
@@ -98,21 +101,37 @@ async function loadActiveAssignmentForTableNow(req, res, next) {
   next();
 }
 
-/**
- * Handlers
- */
-
+/* ------------ route handlers --------------- */
+// create table
 async function create(req, res) {
-  const [created] = await knex("tables").insert(req.body.data).returning("*");
-  res.status(201).json({ data: created });
+    const { table_name, capacity } = req.body.data;
+    const newTable = { table_name, capacity };
+    const created = await tService.create(newTable);
+    res.status(201).json({ data: created });
 }
 
-/**
- * PUT /tables/:table_id/seat
- * - If there is an existing assignment for this reservation → mark seated (idempotent).
- * - If no assignment yet → create a time-window assignment (conflict-checked) and mark seated.
- * - Also updates reservation.status = 'seated'.
- */
+// read (by middleware)
+function readTable(req, res) {
+    res.json({ data: res.locals.table });
+}
+
+// list with syntehtic reservation occupancy flag
+async function list(_req, res) {
+  const tables = await knex("tables").select("*").orderBy("table_name");
+  const nowISO = new Date().toISOString();
+  const active = await knex("table_assignments")
+    .select("table_id")
+    .where("reserved_from", "<=", nowISO)
+    .andWhere("reserved_until", ">", nowISO)
+    .whereIn("status", ["reserved", "seated"]);
+
+  const activeSet = new Set(active.map((r) => r.table_id));
+  // keep shape: reservation_id set to -1 if active now, otherwise null
+  const data = tables.map((t) => ({ ...t, reservation_id: activeSet.has(t.table_id) ? -1 : null }));
+  res.json({ data });
+}
+
+// seat reservtion at table
 async function seat(_req, res, next) {
   const { table, reservation, reservation_id, activeAssignment } = res.locals;
 
@@ -126,11 +145,7 @@ async function seat(_req, res, next) {
   res.json({ data: seatedAssignment });
 }
 
-/**
- * DELETE /tables/:table_id/seat
- * - Finishes the current active assignment (if any) and sets its reservation to 'finished'.
- * - If none, respond 400 "Table is currently not occupied."
- */
+// finish (clear) table
 async function finish(_req, res, next) {
   const { table, activeAssignment } = res.locals;
 
@@ -147,23 +162,33 @@ async function finish(_req, res, next) {
   res.status(204).send();
 }
 
-/**
- * GET /tables
- * - Returns tables and a synthetic "reservation_id" flag for current occupancy to keep FE compatibility.
- */
-async function list(_req, res) {
-  const tables = await knex("tables").select("*").orderBy("table_name");
-  const nowISO = new Date().toISOString();
-  const active = await knex("table_assignments")
-    .select("table_id")
-    .where("reserved_from", "<=", nowISO)
-    .andWhere("reserved_until", ">", nowISO)
-    .whereIn("status", ["reserved", "seated"]);
+function validateTablePatch(req, res, next) {
+    const {table_name, capacity, image_url} = req.body.data;
+    if (table_name !== undefined && String(table_name).trim().length < 2) {
+    return next({ status: 400, message: "table_name must be at least 2 characters." });
+    }
+    if (capacity !== undefined && !(Number.isInteger(Number(capacity)) && Number(capacity) >= 1)) {
+        return next({ status: 400, message: "capacity must be an integer >= 1." });
+    }
+    if (image_url !== undefined && typeof image_url !== "string") {
+        return next({ status: 400, message: "image_url must be a string URL." });
+    }
+    next();
+}
 
-  const activeSet = new Set(active.map((r) => r.table_id));
-  // keep shape: reservation_id set to -1 if active now, otherwise null
-  const data = tables.map((t) => ({ ...t, reservation_id: activeSet.has(t.table_id) ? -1 : null }));
-  res.json({ data });
+async function updateTable(req, res, next) {
+    const updatedTable = req.body.data;
+    const data = await tService.update(updatedTable);
+    res.json({ data });
+}
+
+async function destroyTable(req, res, next) {
+    const { table } = res.locals;
+    const count = await tService.destroyTable(table.table_id);
+    if (!count) {
+      return next({ status: 404, message: `Table not found.` });
+    }
+    res.sendStatus(204);
 }
 
 module.exports = {
@@ -178,8 +203,9 @@ module.exports = {
     finalizeErrors,
     asyncErrorBoundary(create),
   ],
+  read: [asyncErrorBoundary(tableExists), readTable],
   // PUT /tables/:table_id/seat
-  update: [
+  seat: [
     hasData,
     asyncErrorBoundary(tableExists),
     hasReservationId,
@@ -188,10 +214,20 @@ module.exports = {
     asyncErrorBoundary(loadActiveAssignmentForTableNow),
     asyncErrorBoundary(seat),
   ],
+  update: [
+    hasData,
+    asyncErrorBoundary(tableExists),
+    validateTablePatch,
+    asyncErrorBoundary(updateTable),
+  ],
   // DELETE /tables/:table_id/seat
-  delete: [
+  finish: [
     asyncErrorBoundary(tableExists),
     asyncErrorBoundary(loadActiveAssignmentForTableNow),
     asyncErrorBoundary(finish),
+  ],
+  delete: [
+    asyncErrorBoundary(tableExists),
+    asyncErrorBoundary(destroyTable),
   ],
 };
